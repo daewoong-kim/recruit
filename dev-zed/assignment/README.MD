@@ -125,3 +125,24 @@ MyFramework.cs 파일에만 유니티 라이프 사이클 함수를 사용합니
 
 # 문제 해결 방법 (자유롭게 작성)
 
+문제.1
+- Json 파일을 Assets 폴더에서 읽어들이고 임포트한 Newtonsoft JSON 라이브러리로 Parsing하여 JSON 데이터를 사용합니다. (룸타입id, 동 같은 key가 있어 외부 라이브러리를 사용, 아스키코드라면 내장 라이브러리 JsonUtility  사용가능)
+- GetCoordinate 함수를 통해 base64문자열을 byte 배열로 변환, btye 배열을 float 형 사이즈에 맞게 옮긴뒤 3개씩 point를 순서대로 x, z, y로 넣어 버텍스 배열을 Mesh에 전달합니다.
+- 또 3개씩 버텍스를 묶어 Triangle 묶음을 만들어 MeshFilter.mesh에 전달합니다. 
+- RecalculateBounds로 메쉬의 경계면 크기 바운딩 볼륨을 계산하고, RecalculateNormals를 통해 버텍스의 Normal값을 자동 계산합니다.
+- 모든 버텍스를 묶어 모든 데이터가 하나의 메시로 묶이며 하나의 게임 오브젝트로 그려집니다.
+- 참고로 스크립트는 오브젝트에 스크립트를 붙이지 않고 [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)] 을 통해 Scene 로드시 게임오브젝트를 만들고 필요한 컴포넌트를 추 가하였습니다. 유니티 라이프 사이클 함수 (Awake, Start, OnEnable, OnDisable, OnDestroy, Update) 이외의 직접 라이플 사이클을 구현 (점수 획득한 문제에 가산점 +20점) 라이플사이클을 사용하지는 않았는데 의도한 내용이랑 다를수 있습니다.
+
+문제.2
+- 텍스처링을 하기 위하여 Assets 폴더에서 텍스처를 읽어들이고 MeshRenderer.material에 전달합니다.
+- 1번 조건에 맞게 Vector3.up, Vector3.down과 Normal을 Dot연산 후 값이 1과 같은 값은 (3)번을 쓰도록 정점에 uv를 텍스처 영역에 맞게 지정하였습니다. (uv <0.75,0,5> ~ <1,1>) 참고로 up, down 방향의 normal이 RecalculateNormals에서 얻은 값고 근사하지만 정확하지 않아 근사치 0.99 값까지 허용하였습니다. 같은 좌표의 버텍스가 미묘하게 달라서 발생한것 같아 오차수정하였습니다.
+- 2번 조건에 맞게 Y축으로의 시계방향으로 Vector3.Forward와 normal의 사이각을 Degree로 구하고 180~220도 사이의 텍스처는 (1)번을 쓰도록 정점uv를 텍스처 영역에 맞게 지정하였습니다 (uv <0,높이> ~ <0.5,높이>)
+- 높이 / 3으로 나오는 값을 V의 값으로 하여 텍스처가 층 개수에 따라 나오도록 설정하였습니다. (repeat 모드)
+- 2번,3 조건이면서 UV를 할당한 좌표는 savedUVList에 저장하여 재사용하였고, 삼각형의 모든 버텍스가 저장되어 있지 않다면 초기시작 UV를 세팅하였고(사각형벽을 만들때 시작이 오른쪽부터라 우측방향의 U를 먼저세팅), 삼각형의 일부분이 저장되었다면 저장된 UV를 기준으로 Normal 방향과 좌,우 방향에 따라 설정하였습니다. 
+- 3번 조건은 else로 (2)번을 쓰도록 정점uv를 텍스처 영역에 맞게 지정하였습니다 (uv <0.5,높이> ~ <0.75,높이>)
+- 요구하는 결과 사진과 비슷하게 Orthograpic, 환경광으로 세팅하였고 Shadow Distance를 길게 설정하였습니다.
+- 프로젝트를 열때 자동으로 ZedScene이 열리는게 아니므로 ZedScene를 먼저 열고 플레이 해야합니다.
+
+참고.
+결과 사진과 렌더링 사진이 다릅니다. 이유는 남서쪽을 바라보는 것이 모두 창문이 있는게 아니고 면의 타입에 따라 텍스처링이 달라져야하는데 조건이 부족합니다.
+바닥과 동번호는 문제 조건에 없어 진행하지 않았습니다.
